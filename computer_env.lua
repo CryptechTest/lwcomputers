@@ -3014,8 +3014,8 @@ function lwcomp.new_computer (computer_pos, computer_id, computer_persists, robo
 		end
 
 		local nodedef = minetest.registered_nodes[node.name]
-
-		if not nodedef or not nodedef.diggable or minetest.is_protected (pos, "") or
+		local owner = meta:get_string ("owner") or ""
+		if not nodedef or not nodedef.diggable or minetest.is_protected (pos, owner) or
 			minetest.get_item_group (node.name, "unbreakable") > 0 then
 
 			return nil
@@ -3110,8 +3110,8 @@ function lwcomp.new_computer (computer_pos, computer_id, computer_persists, robo
 
 		if node.name ~= "air" then
 			local nodedef = minetest.registered_nodes[node.name]
-
-			if not nodedef or not nodedef.buildable_to or minetest.is_protected (pos, "") then
+			local owner = meta:get_string ("owner") or ""
+			if not nodedef or not nodedef.buildable_to or minetest.is_protected (pos, owner) then
 				return false
 			end
 

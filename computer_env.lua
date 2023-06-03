@@ -1874,6 +1874,16 @@ function lwcomp.new_computer(computer_pos, computer_id, computer_persists, robot
 				local run = false
 				local result, yielded, param; --, sleep_secs, event_name;
 
+				local powered = false
+				if computer.use_power() then
+					powered = true
+					--minetest.log("computer use power")
+				else
+					result = true
+					yielded = "shutdown"
+					computer.yielded = yielded
+				end
+
 				if computer.yielded == "get_event" then
 					if #computer.events > 0 then
 						if computer.event_name:len() > 0 then
@@ -1971,7 +1981,7 @@ function lwcomp.new_computer(computer_pos, computer_id, computer_persists, robot
 					end
 				end
 
-				if run then
+				if run or not powered then
 					if result then
 						computer.yielded = yielded
 						computer.sleep_secs = tonumber(param or 0) or 0
@@ -3755,6 +3765,77 @@ function lwcomp.new_computer(computer_pos, computer_id, computer_persists, robot
 		return false
 	end
 
+	local function default_get_charge(itemstack)
+		-- check if is chargable
+		local tool_name = itemstack:get_name()
+		if not technic.power_tools[tool_name] then
+			return 0, 0
+		end
+		-- Set meta data for the tool if it didn't do it itself
+		local item_meta = minetest.deserialize(itemstack:get_metadata()) or {}
+		if not item_meta.charge then
+			item_meta.charge = 0
+		end
+		return item_meta.charge, technic.power_tools[tool_name]
+	end
+
+	local function default_set_charge(itemstack, charge)
+		local tool_name = itemstack:get_name()
+		if technic.power_tools[tool_name] then
+			technic.set_RE_wear(itemstack, charge, technic.power_tools[tool_name])
+		end
+		local item_meta = minetest.deserialize(itemstack:get_metadata()) or {}
+		item_meta.charge = charge
+		itemstack:set_metadata(minetest.serialize(item_meta))
+	end
+
+	computer.use_power = function()
+		local meta = minetest.get_meta(computer.pos)
+		if not meta then
+			return false
+		end
+
+		local inv = meta:get_inventory()
+		if not inv then
+			return false
+		end
+
+		local stack = nil
+		local slot_index = 0
+		local slots = inv:get_size("storage")
+		for s = 1, slots do
+			local _stack = inv:get_stack("storage", s)
+			if _stack ~= nil then
+				if _stack:get_name() == "technic:battery" then
+					local tool_charge, item_max_charge = default_get_charge(_stack)
+						if tool_charge > 0 then
+						stack = _stack
+						slot_index = s
+						break
+					end
+				end
+			end
+		end
+
+		if not stack or stack:is_empty() then
+			return false
+		end
+
+		local src_def = stack:get_definition()
+		local technic_get_charge = src_def.technic_get_charge or default_get_charge
+		local technic_set_charge = src_def.technic_set_charge or default_set_charge
+		local tool_charge, item_max_charge = technic_get_charge(stack)
+		if tool_charge == 0 or item_max_charge == 0 then
+			return false
+		end
+
+		local charge_step = 1
+		tool_charge = tool_charge - charge_step
+
+		technic_set_charge(stack, tool_charge)
+		inv:set_stack("storage", slot_index, stack)
+		return true
+	end
 
 	return computer
 end

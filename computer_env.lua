@@ -3790,6 +3790,9 @@ function lwcomp.new_computer(computer_pos, computer_id, computer_persists, robot
 	end
 
 	computer.use_power = function()
+		if not computer.robot then
+			return true
+		end
 		local meta = minetest.get_meta(computer.pos)
 		if not meta then
 			return false
@@ -3808,7 +3811,7 @@ function lwcomp.new_computer(computer_pos, computer_id, computer_persists, robot
 			if _stack ~= nil then
 				if _stack:get_name() == "technic:battery" then
 					local tool_charge, item_max_charge = default_get_charge(_stack)
-						if tool_charge > 0 then
+					if tool_charge > 0 then
 						stack = _stack
 						slot_index = s
 						break

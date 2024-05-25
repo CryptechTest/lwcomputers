@@ -3766,27 +3766,18 @@ function lwcomp.new_computer(computer_pos, computer_id, computer_persists, robot
 	end
 
 	local function default_get_charge(itemstack)
-		-- check if is chargable
 		local tool_name = itemstack:get_name()
 		if not technic.power_tools[tool_name] then
 			return 0, 0
 		end
-		-- Set meta data for the tool if it didn't do it itself
-		local item_meta = minetest.deserialize(itemstack:get_metadata()) or {}
-		if not item_meta.charge then
-			item_meta.charge = 0
-		end
-		return item_meta.charge, technic.power_tools[tool_name]
+		return technic.get_RE_charge(itemstack)
 	end
 
 	local function default_set_charge(itemstack, charge)
 		local tool_name = itemstack:get_name()
 		if technic.power_tools[tool_name] then
-			technic.set_RE_wear(itemstack, charge, technic.power_tools[tool_name])
+			technic.set_RE_charge(itemstack, charge)
 		end
-		local item_meta = minetest.deserialize(itemstack:get_metadata()) or {}
-		item_meta.charge = charge
-		itemstack:set_metadata(minetest.serialize(item_meta))
 	end
 
 	computer.use_power = function()
